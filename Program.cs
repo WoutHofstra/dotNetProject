@@ -1,12 +1,43 @@
 ﻿using System;
 using System.Net.Http;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using DotNetEnv;
+using System.Text.Json;
+using System.Runtime.Versioning;
 
 namespace dotNetProject
 {
     class Program
     {
+        public class GeoapifyFeatureCollection
+        {
+            public string? Type { get; set; }
+            public List<GeoapifyFeature>? Features { get; set; }
+        }
+
+        public class GeoapifyFeature
+        {
+            public string? Type { get; set; }
+            public GeoapifyProperties? Properties { get; set; }
+            public GeoapifyGeometry? Geometry { get; set; }
+        }
+
+        public class GeoapifyProperties
+        {
+            public string? Name { get; set; }
+            public string? Formatted { get; set; }
+            public List<string>? Categories { get; set; }
+        }
+
+        public class GeoapifyGeometry
+        {
+            public string? Type { get; set; }
+            public List<double>? Coordinates { get; set; }
+        }
+
         static async Task Main(string[] args)
         {
 
@@ -27,7 +58,7 @@ namespace dotNetProject
             string geoapifyCategory = categoryInput switch
             {
                 "restaurants" => "catering.restaurant",
-                "hotels" => "accomodation.hotel",
+                "hotels" => "accommodation.hotel",
                 "beaches" => "beach",
                 _ => ""
             };
@@ -38,11 +69,43 @@ namespace dotNetProject
                 Environment.Exit(1);
             }
 
-            await FetchPlaces(geoapifyCategory, limit);
+            string json = await FetchPlaces(geoapifyCategory, limit);
+            if (json == "")
+            {
+                Console.WriteLine("Http request failed");
+                Environment.Exit(1);
+            }
+
+            var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+            var collection = JsonSerializer.Deserialize<GeoapifyFeatureCollection>(json, options);
+            if (collection == null || collection.Features == null)
+            {
+                Console.WriteLine("collection empty!");
+                Environment.Exit(1);
+            }
+
+
+            foreach (var feature in collection.Features)
+            {
+                if (feature.Properties.Name == null)
+                {
+                    continue;
+                }
+                Console.WriteLine($"Name: {feature.Properties.Name}");
+                Console.WriteLine($"Address: {feature.Properties.Formatted}");
+                Console.WriteLine($"Categories: {string.Join(", ", feature.Properties.Categories)}");
+                Console.WriteLine(new string('-', 40));
+            }
+
+
 
         }
 
-        static async Task FetchPlaces(string category, string limit)
+        static async Task<string> FetchPlaces(string category, string limit)
         {
             // Load dotenv, and store api key
             Env.Load();
@@ -65,17 +128,17 @@ namespace dotNetProject
                 res.EnsureSuccessStatusCode();
 
                 string json = await res.Content.ReadAsStringAsync();
-                
 
-                Console.Write("Response from the API:");
-                Console.Write($"{json}\n");
+                return json;
             }
             catch (HttpRequestException e)
             {
                 Console.WriteLine("Request failed!");
                 Console.WriteLine(e.Message);
             }
-
+            return "";
         }
+
+
     }
 }
