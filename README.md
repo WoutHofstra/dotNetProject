@@ -1,5 +1,6 @@
 # dotNetProject
 
+![GIF is supposed to be here](dotNetProject.gif)
 ## Intro
 Hello everyone! This is my very first project made using .NET. I am learning .NET because I am applying to a job that requires it, and I would like to be responsible and prepare for that. I've seen a few videos about .NET, and I have made my first little script already (A fibonacci sequence calculator). I hope this project goes well, and teaches me lots of things!
 
